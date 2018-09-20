@@ -416,6 +416,103 @@ pups_data = janitor::clean_names(pups_data)</code></pre>
 ## # ... with 46 more rows, and 4 more variables: pups_dead_birth &lt;int&gt;,
 ## #   pups_survive &lt;int&gt;, wt_gain &lt;dbl&gt;, wt_gain_squared &lt;dbl&gt;</code></pre>
 </div>
+<div id="arrange" class="section level2">
+<h2>Arrange</h2>
+<pre class="r"><code>arrange(litters_data, gd0_weight)</code></pre>
+<pre><code>## # A tibble: 49 x 8
+##   group litter_number gd0_weight gd18_weight gd_of_birth pups_born_alive
+##   &lt;chr&gt; &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;       &lt;int&gt;           &lt;int&gt;
+## 1 Mod7  #59                 17          33.4          19               8
+## 2 Mod7  #62                 19.5        35.9          19               7
+## 3 Con7  #85                 19.7        34.7          20               3
+## # ... with 46 more rows, and 2 more variables: pups_dead_birth &lt;int&gt;,
+## #   pups_survive &lt;int&gt;</code></pre>
+<pre class="r"><code>arrange(litters_data, desc(pups_born_alive), gd0_weight)</code></pre>
+<pre><code>## # A tibble: 49 x 8
+##   group litter_number gd0_weight gd18_weight gd_of_birth pups_born_alive
+##   &lt;chr&gt; &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;       &lt;int&gt;           &lt;int&gt;
+## 1 Low7  #102                22.6        43.3          20              11
+## 2 Mod8  #5/93               NA          41.1          20              11
+## 3 Mod7  #103                21.4        42.1          19               9
+## # ... with 46 more rows, and 2 more variables: pups_dead_birth &lt;int&gt;,
+## #   pups_survive &lt;int&gt;</code></pre>
+</div>
+<div id="piping" class="section level2">
+<h2>Piping!</h2>
+<p>Let’s look at intermediate object approach:</p>
+<pre class="r"><code>litters_data_raw = read_csv(&quot;./data/FAS_litters.csv&quot;,
+  col_types = &quot;ccddiiii&quot;)
+litters_data_clean_names = janitor::clean_names(litters_data_raw)
+litters_data_selected_cols = select(litters_data_clean_names, -pups_survive)
+litters_data_with_vars = mutate(litters_data_selected_cols, 
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group))
+litters_data_with_vars</code></pre>
+<pre><code>## # A tibble: 49 x 8
+##   group litter_number gd0_weight gd18_weight gd_of_birth pups_born_alive
+##   &lt;chr&gt; &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;       &lt;int&gt;           &lt;int&gt;
+## 1 con7  #85                 19.7        34.7          20               3
+## 2 con7  #1/2/95/2           27          42            19               8
+## 3 con7  #5/5/3/83/3-3       26          41.4          19               6
+## # ... with 46 more rows, and 2 more variables: pups_dead_birth &lt;int&gt;,
+## #   wt_gain &lt;dbl&gt;</code></pre>
+<p>Use function calls</p>
+<pre class="r"><code>litters_data_clean = 
+  mutate(
+    select(
+      janitor::clean_names(
+        read_csv(&quot;./data/FAS_litters.csv&quot;, col_types = &quot;ccddiiii&quot;)
+        ), 
+    -pups_survive
+    ),
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group)
+  )
+litters_data_clean</code></pre>
+<pre><code>## # A tibble: 49 x 8
+##   group litter_number gd0_weight gd18_weight gd_of_birth pups_born_alive
+##   &lt;chr&gt; &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;       &lt;int&gt;           &lt;int&gt;
+## 1 con7  #85                 19.7        34.7          20               3
+## 2 con7  #1/2/95/2           27          42            19               8
+## 3 con7  #5/5/3/83/3-3       26          41.4          19               6
+## # ... with 46 more rows, and 2 more variables: pups_dead_birth &lt;int&gt;,
+## #   wt_gain &lt;dbl&gt;</code></pre>
+<p>Use piping</p>
+<pre class="r"><code>read_csv(&quot;./data/FAS_litters.csv&quot;, col_types = &quot;ccddiiii&quot;) %&gt;%
+  janitor::clean_names() %&gt;%
+  select(-pups_survive) %&gt;%
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+  ) %&gt;%
+  filter(!is.na(gd0_weight))</code></pre>
+<pre><code>## # A tibble: 34 x 8
+##   group litter_number gd0_weight gd18_weight gd_of_birth pups_born_alive
+##   &lt;chr&gt; &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;       &lt;int&gt;           &lt;int&gt;
+## 1 con7  #85                 19.7        34.7          20               3
+## 2 con7  #1/2/95/2           27          42            19               8
+## 3 con7  #5/5/3/83/3-3       26          41.4          19               6
+## # ... with 31 more rows, and 2 more variables: pups_dead_birth &lt;int&gt;,
+## #   wt_gain &lt;dbl&gt;</code></pre>
+<p>In piping, you don’t need to specify the data frame because it is assumed. Hover over the call and you see that it says “.data”</p>
+<p>Illustrate placeholder use with lm</p>
+<pre class="r"><code>read_csv(&quot;./data/FAS_litters.csv&quot;, col_types = &quot;ccddiiii&quot;) %&gt;%
+  janitor::clean_names() %&gt;%
+  select(-pups_survive) %&gt;%
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+  ) %&gt;%
+  filter(!is.na(gd0_weight)) %&gt;%
+  lm(gd18_weight ~ gd0_weight, data = .)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = gd18_weight ~ gd0_weight, data = .)
+## 
+## Coefficients:
+## (Intercept)   gd0_weight  
+##      15.342        1.084</code></pre>
+</div>
 
 
 
